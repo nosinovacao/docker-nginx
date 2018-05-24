@@ -2,7 +2,7 @@ FROM alpine:3.7
 
 LABEL maintainer="NOS Inovação <nosi.metadata@nos.pt>"
 
-ENV NGINX_VERSION 1.12.2
+ENV NGINX_VERSION 1.14.0
 
 # Ensure git
 RUN apk update && apk upgrade \
