@@ -2,7 +2,7 @@ FROM alpine:3.7
 
 LABEL maintainer="NOS Inovação <nosi.metadata@nos.pt>"
 
-ENV NGINX_VERSION 1.14.0
+ENV NGINX_VERSION 1.16.0
 
 # Ensure git
 RUN apk update && apk upgrade \
@@ -11,9 +11,18 @@ RUN apk update && apk upgrade \
 # 3rd party modules
 RUN cd ~ \
 	&& git clone https://github.com/kvspb/nginx-auth-ldap.git \
-	&& git clone https://github.com/vozlt/nginx-module-vts.git
+	&& git clone https://github.com/vozlt/nginx-module-vts.git \
+	&& wget https://github.com/simplresty/ngx_devel_kit/archive/v0.3.0.tar.gz \
+	&& tar xvf v0.3.0.tar.gz \
+	&& wget https://github.com/openresty/lua-nginx-module/archive/v0.10.15.tar.gz \
+	&& tar xvf v0.10.15.tar.gz \
+	&& git clone https://github.com/openresty/luajit2.git \
+	&& wget http://hg.nginx.org/njs/archive/0.3.1.tar.gz \
+	&& tar xvf 0.3.1.tar.gz
 
 RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
+	&& export LUAJIT_LIB=/usr/local/lib \
+	&& export LUAJIT_INC=/usr/local/include/luajit-2.1 \
 	&& CONFIG="\
 		--prefix=/etc/nginx \
 		--sbin-path=/usr/sbin/nginx \
@@ -58,9 +67,12 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 		--with-compat \
 		--with-file-aio \
 		--with-http_v2_module \
+		--with-ld-opt=-Wl,-rpath,/usr/local/lib \
 		--add-module=/root/nginx-auth-ldap \
 		--add-module=/root/nginx-module-vts \
-	" \
+		--add-dynamic-module=/root/njs-0.3.1/nginx \
+		--add-module=/root/ngx_devel_kit-0.3.0 \
+		--add-dynamic-module=/root/lua-nginx-module-0.10.15" \
 	&& addgroup -S nginx \
 	&& adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx \
 	&& apk add --no-cache --virtual .build-deps \
@@ -79,6 +91,8 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 		geoip-dev \
 		# openldap-dev is a dependecy for the nginx-auth-ldap module
 		openldap-dev \
+	&& cd ~/luajit2 \
+	&& make -j4 && make install && cd .. \
 	&& curl -fSL https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz -o nginx.tar.gz \
 	&& curl -fSL https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz.asc  -o nginx.tar.gz.asc \
 	&& export GNUPGHOME="$(mktemp -d)" \
@@ -155,7 +169,7 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 	&& apk add --no-cache bash \
 	\
 	# Cleanup 3rdparty modules
-	&& rm -rf /root/nginx-*
+	&& rm -rf /root/nginx-* /root/*.gz /root/lua* /root/ngx* /root/njs*
 
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY nginx.vh.default.conf /etc/nginx/conf.d/default.conf
