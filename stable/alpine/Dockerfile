@@ -3,6 +3,7 @@ FROM alpine:3.7
 LABEL maintainer="NOS Inovação <nosi.metadata@nos.pt>"
 
 ENV NGINX_VERSION 1.16.0
+ENV NJS_VERSION 0.3.1
 
 # Ensure git
 RUN apk update && apk upgrade \
@@ -12,13 +13,11 @@ RUN apk update && apk upgrade \
 RUN cd ~ \
 	&& git clone https://github.com/kvspb/nginx-auth-ldap.git \
 	&& git clone https://github.com/vozlt/nginx-module-vts.git \
-	&& wget https://github.com/simplresty/ngx_devel_kit/archive/v0.3.0.tar.gz \
-	&& tar xvf v0.3.0.tar.gz \
-	&& wget https://github.com/openresty/lua-nginx-module/archive/v0.10.15.tar.gz \
-	&& tar xvf v0.10.15.tar.gz \
+	&& git clone https://github.com/simplresty/ngx_devel_kit.git \
+	&& git clone https://github.com/openresty/lua-nginx-module.git \
 	&& git clone https://github.com/openresty/luajit2.git \
-	&& wget http://hg.nginx.org/njs/archive/0.3.1.tar.gz \
-	&& tar xvf 0.3.1.tar.gz
+	&& wget http://hg.nginx.org/njs/archive/${NJS_VERSION}.tar.gz \
+	&& tar xvf ${NJS_VERSION}.tar.gz
 
 RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 	&& export LUAJIT_LIB=/usr/local/lib \
@@ -71,8 +70,8 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 		--add-module=/root/nginx-auth-ldap \
 		--add-module=/root/nginx-module-vts \
 		--add-dynamic-module=/root/njs-0.3.1/nginx \
-		--add-module=/root/ngx_devel_kit-0.3.0 \
-		--add-dynamic-module=/root/lua-nginx-module-0.10.15" \
+		--add-module=/root/ngx_devel_kit \
+		--add-dynamic-module=/root/lua-nginx-module" \
 	&& addgroup -S nginx \
 	&& adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx \
 	&& apk add --no-cache --virtual .build-deps \
