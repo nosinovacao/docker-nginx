@@ -1,6 +1,6 @@
 # About this Repo
 
-[![](https://images.microbadger.com/badges/image/nosinovacao/docker-nginx.svg)](https://hub.docker.com/r/nosinovacao/docker-nginx/ "nosinovacao/docker-nginx on docker hub") [![](https://images.microbadger.com/badges/version/nosinovacao/docker-nginx.svg)](https://hub.docker.com/r/nosinovacao/docker-nginx/ "nosinovacao/docker-nginx on docker hub")
+[![](https://images.microbadger.com/badges/image/nosinovacao/nginx.svg)](https://hub.docker.com/u/nosinovacao/nginx/ "nosinovacao/nginx on docker hub") [![](https://images.microbadger.com/badges/version/nosinovacao/nginx.svg)](https://hub.docker.com/u/nosinovacao/nginx/ "nosinovacao/nginx on docker hub")
 # ![NGINX logo](https://raw.github.com/nosinovacao/docker-nginx/master/images/NginxLogo.gif)
 
 This is a forked repo of the official Docker image for [nginx](https://registry.hub.docker.com/_/nginx/). See the
@@ -16,6 +16,8 @@ We modified the alpine images (stable & mainline) to include aditional modules:
 
 - [VST](https://github.com/vozlt/nginx-module-vts)
 - [LDAP Auth](https://github.com/kvspb/nginx-auth-ldap)
+- [NJS](http://hg.nginx.org/njs)
+- [LUA nginx module](https://github.com/openresty/lua-nginx-module)
 
 **Note that we have not modified the alpine-perl or stretch images.**
 
