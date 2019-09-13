@@ -2,12 +2,29 @@ FROM alpine:3.7
 
 LABEL maintainer="NOS Inovação <nosi.metadata@nos.pt>"
 
-ENV NGINX_VERSION 1.16.0
-ENV NJS_VERSION 0.3.1
+ENV NGINX_VERSION 1.16.1
+ENV NJS_VERSION 0.3.5
 
 # Ensure git
 RUN apk update && apk upgrade \
-	&& apk add --no-cache --virtual .build-deps bash git
+	&& apk add --no-cache --virtual .build-deps bash git libmaxminddb-dev autoconf automake
+
+RUN apk add --virtual .build-deps \
+		gcc \
+		libc-dev \
+		make \
+		#openssl-dev \ # used libressl-dev instead (openssl does not work with openldap)
+		libressl-dev \
+		pcre-dev \
+		zlib-dev \
+		linux-headers \
+		curl \
+		gnupg \
+		libxslt-dev \
+		gd-dev \
+		geoip-dev \
+		# openldap-dev is a dependecy for the nginx-auth-ldap module
+		openldap-dev
 
 # 3rd party modules
 RUN cd ~ \
@@ -17,7 +34,8 @@ RUN cd ~ \
 	&& git clone https://github.com/openresty/lua-nginx-module.git \
 	&& git clone https://github.com/openresty/luajit2.git \
 	&& wget http://hg.nginx.org/njs/archive/${NJS_VERSION}.tar.gz \
-	&& tar xvf ${NJS_VERSION}.tar.gz
+	&& tar xvf ${NJS_VERSION}.tar.gz \
+	&& git clone https://github.com/leev/ngx_http_geoip2_module.git 
 
 RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 	&& export LUAJIT_LIB=/usr/local/lib \
@@ -69,27 +87,12 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 		--with-ld-opt=-Wl,-rpath,/usr/local/lib \
 		--add-module=/root/nginx-auth-ldap \
 		--add-module=/root/nginx-module-vts \
-		--add-dynamic-module=/root/njs-0.3.1/nginx \
+		--add-dynamic-module=/root/njs-$NJS_VERSION/nginx \
 		--add-module=/root/ngx_devel_kit \
-		--add-dynamic-module=/root/lua-nginx-module" \
+		--add-dynamic-module=/root/lua-nginx-module \
+		--add-module=/root/ngx_http_geoip2_module" \
 	&& addgroup -S nginx \
 	&& adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx \
-	&& apk add --no-cache --virtual .build-deps \
-		gcc \
-		libc-dev \
-		make \
-		#openssl-dev \ # used libressl-dev instead (openssl does not work with openldap)
-		libressl-dev \
-		pcre-dev \
-		zlib-dev \
-		linux-headers \
-		curl \
-		gnupg \
-		libxslt-dev \
-		gd-dev \
-		geoip-dev \
-		# openldap-dev is a dependecy for the nginx-auth-ldap module
-		openldap-dev \
 	&& cd ~/luajit2 \
 	&& make -j4 && make install && cd .. \
 	&& curl -fSL https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz -o nginx.tar.gz \
