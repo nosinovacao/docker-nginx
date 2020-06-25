@@ -1,9 +1,9 @@
-FROM alpine:3.7
+FROM alpine:3.11
 
-LABEL maintainer="NOS Inovação <nosi.metadata@nos.pt>"
+LABEL maintainer="NOS Inovação <nosi.platforms@nos.pt>"
 
-ENV NGINX_VERSION 1.16.1
-ENV NJS_VERSION 0.3.5
+ENV NGINX_VERSION 1.18.0
+ENV NJS_VERSION 0.4.0
 
 # Ensure git
 RUN apk update && apk upgrade \
@@ -11,9 +11,13 @@ RUN apk update && apk upgrade \
 
 RUN apk add --virtual .build-deps \
 		gcc \
+		automake \
+		autoconf \
+		libtool \
+		git \
 		libc-dev \
 		make \
-		#openssl-dev \ # used libressl-dev instead (openssl does not work with openldap)
+		# openssl-dev \ # used libressl-dev instead (openssl does not work with openldap)
 		libressl-dev \
 		pcre-dev \
 		zlib-dev \
@@ -24,19 +28,38 @@ RUN apk add --virtual .build-deps \
 		gd-dev \
 		geoip-dev \
 		# openldap-dev is a dependecy for the nginx-auth-ldap module
-		openldap-dev
-
+		openldap-dev \
+		#perl-dev \
+		#libedit-dev \
+		#mercurial \
+		bash \
+		ca-certificates
+		#alpine-sdk \
+		#findutils \
 # 3rd party modules
-RUN cd ~ \
-	&& git clone https://github.com/kvspb/nginx-auth-ldap.git \
+WORKDIR /root
+RUN    git clone https://github.com/kvspb/nginx-auth-ldap.git \
 	&& git clone https://github.com/vozlt/nginx-module-vts.git \
 	&& git clone https://github.com/simplresty/ngx_devel_kit.git \
 	&& git clone https://github.com/openresty/lua-nginx-module.git \
 	&& git clone https://github.com/openresty/luajit2.git \
+	&& git clone git://github.com/vozlt/nginx-module-sts.git \
+	&& git clone git://github.com/vozlt/nginx-module-stream-sts.git \
+	&& git clone --recursive https://github.com/maxmind/libmaxminddb \
 	&& wget http://hg.nginx.org/njs/archive/${NJS_VERSION}.tar.gz \
 	&& tar xvf ${NJS_VERSION}.tar.gz \
 	&& git clone https://github.com/leev/ngx_http_geoip2_module.git 
 
+# build maxminddb library
+WORKDIR /root/libmaxminddb
+RUN set -x -e && \
+	sh bootstrap && \
+    sh configure && \
+	make -j`nproc` && \
+	make check && \
+	make install
+
+WORKDIR /root
 RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 	&& export LUAJIT_LIB=/usr/local/lib \
 	&& export LUAJIT_INC=/usr/local/include/luajit-2.1 \
@@ -90,11 +113,15 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 		--add-dynamic-module=/root/njs-$NJS_VERSION/nginx \
 		--add-module=/root/ngx_devel_kit \
 		--add-dynamic-module=/root/lua-nginx-module \
-		--add-module=/root/ngx_http_geoip2_module" \
-	&& addgroup -S nginx \
-	&& adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx \
+		--add-module=/root/ngx_http_geoip2_module \
+		--add-module=/root/nginx-module-sts \
+		--add-module=/root/nginx-module-stream-sts" \
+	&& addgroup --system --gid 101 nginx \
+	&& adduser -S -D -H -u 101 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx \
+	&& mkdir -p /var/cache/nginx \
+	&& chown 101:101 /var/cache/nginx \
 	&& cd ~/luajit2 \
-	&& make -j4 && make install && cd .. \
+	&& make -j`nproc` && make install && cd .. \
 	&& curl -fSL https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz -o nginx.tar.gz \
 	&& curl -fSL https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz.asc  -o nginx.tar.gz.asc \
 	&& export GNUPGHOME="$(mktemp -d)" \
