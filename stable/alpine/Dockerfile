@@ -1,6 +1,6 @@
 FROM alpine:3.11
 
-LABEL maintainer="NOS Inovação <nosi.metadata@nos.pt>"
+LABEL maintainer="NOS Inovação <nosi.platforms@nos.pt>"
 
 ENV NGINX_VERSION 1.18.0
 ENV NJS_VERSION 0.4.0
