@@ -5,10 +5,6 @@ LABEL maintainer="NOS Inovação <nosi.platforms@nos.pt>"
 ENV NGINX_VERSION 1.18.0
 ENV NJS_VERSION 0.4.0
 
-# Ensure git
-RUN apk update && apk upgrade \
-	&& apk add --no-cache --virtual .build-deps bash git libmaxminddb-dev autoconf automake
-
 RUN apk add --virtual .build-deps \
 		gcc \
 		automake \
